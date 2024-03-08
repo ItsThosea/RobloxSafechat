@@ -90,9 +90,9 @@ public abstract class MixinChatScreen extends Screen {
 		return new ImageButton(
 				x, height - 14, // x/y
 				12, 12, // width/height
-				null,
-				ignored -> {},
-				Component.empty()
+				-1, -1, // u/v (ignored, we override rendering)
+				null, // icon (ignored, we override rendering)
+				ignored -> {}
 		) {
 			@Override
 			public void renderWidget(GuiGraphics graphics, int i, int j, float f) {
@@ -106,9 +106,11 @@ public abstract class MixinChatScreen extends Screen {
 					icon = normal;
 				}
 
-				graphics.blitSprite(icon,
-						this.getX(), this.getY(),
-						this.width, this.height);
+				graphics.blit(icon,
+						getX(), getY(), // x/y
+						0, 0, // u/v
+						width, height,
+						12, 12); // texture height / texture width
 			}
 
 			// Don't allow arrow keys

@@ -14,16 +14,19 @@ public final class RobloxSafechat implements ClientModInitializer {
 	public static final String MOD_ID = "robloxsafechat";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-	public static final ResourceLocation ICON_KEY = new ResourceLocation(MOD_ID, "chaticon/default");
-	public static final ResourceLocation HOVERED_KEY = new ResourceLocation(MOD_ID, "chaticon/hover");
-	public static final ResourceLocation SELECTED_KEY = new ResourceLocation(MOD_ID, "chaticon/selected");
+	public static final ResourceLocation ICON_KEY = new ResourceLocation(MOD_ID,
+			"textures/gui/sprites/chaticon/default.png");
+	public static final ResourceLocation HOVERED_KEY = new ResourceLocation(MOD_ID,
+			"textures/gui/sprites/chaticon/hover.png");
+	public static final ResourceLocation SELECTED_KEY = new ResourceLocation(MOD_ID,
+			"textures/gui/sprites/chaticon/selected.png");
 
 	public static final ResourceLocation SETTINGS_ICON_KEY =
-			new ResourceLocation(MOD_ID, "settingsicon/default");
+			new ResourceLocation(MOD_ID, "textures/gui/sprites/settingsicon/default.png");
 	public static final ResourceLocation SETTINGS_HOVERED_KEY =
-			new ResourceLocation(MOD_ID, "settingsicon/hover");
+			new ResourceLocation(MOD_ID, "textures/gui/sprites/settingsicon/hover.png");
 	public static final ResourceLocation SETTINGS_SELECTED_KEY =
-			new ResourceLocation(MOD_ID, "settingsicon/selected");
+			new ResourceLocation(MOD_ID, "textures/gui/sprites/settingsicon/selected.png");
 
 	private static float SCALE;
 	public static boolean INSTANTLY_SEND;

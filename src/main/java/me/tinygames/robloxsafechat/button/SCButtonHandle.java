@@ -35,6 +35,11 @@ final class SCButtonHandle extends Button {
 		calculatePosAndScale();
 	}
 
+	// not a method in 1.20.1 so we'll make it ourselves?
+	public void setHeight(int height) {
+		this.height = height;
+	}
+
 	@Override
 	public void playDownSound(SoundManager soundManager) {
 		if(isSettingsButton) {
