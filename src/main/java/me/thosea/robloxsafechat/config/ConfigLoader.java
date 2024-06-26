@@ -1,4 +1,4 @@
-package me.tinygames.robloxsafechat.config;
+package me.thosea.robloxsafechat.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -7,8 +7,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonWriter;
-import me.tinygames.robloxsafechat.RobloxSafechat;
-import me.tinygames.robloxsafechat.element.GroupElement;
+import me.thosea.robloxsafechat.RobloxSafechat;
+import me.thosea.robloxsafechat.element.GroupElement;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -24,8 +24,6 @@ import java.io.FileReader;
 import java.io.OutputStreamWriter;
 import java.nio.file.Path;
 import java.util.function.Consumer;
-
-import static me.tinygames.robloxsafechat.RobloxSafechat.LOGGER;
 
 public final class ConfigLoader {
 	private ConfigLoader() {}
@@ -87,7 +85,7 @@ public final class ConfigLoader {
 
 			configError = false;
 		} catch(Exception e) {
-			LOGGER.error("Failed to read config file from " + ConfigFiles.CONFIG_FILE, e);
+			RobloxSafechat.LOGGER.error("Failed to read config file from " + ConfigFiles.CONFIG_FILE, e);
 			configError = true;
 			setDefaultConfig();
 		}
@@ -109,8 +107,8 @@ public final class ConfigLoader {
 			RobloxSafechat.ROOT = GroupElement.deserializeRoot(object);
 			messageError = false;
 		} catch(Exception e) {
-			LOGGER.error("Failed to read messages files from " + ConfigFiles.MESSAGES_FILE);
-			LOGGER.error("Default messages will be used instead.", e);
+			RobloxSafechat.LOGGER.error("Failed to read messages files from " + ConfigFiles.MESSAGES_FILE);
+			RobloxSafechat.LOGGER.error("Default messages will be used instead.", e);
 			RobloxSafechat.ROOT = DefaultChats.ROOT;
 			messageError = true;
 		}
@@ -177,7 +175,7 @@ public final class ConfigLoader {
 				throw new Exception("An unknown error occurred");
 			}
 		} catch(Exception e) {
-			LOGGER.error("Failed to make config directory at {}", dir);
+			RobloxSafechat.LOGGER.error("Failed to make config directory at {}", dir);
 			return;
 		}
 
@@ -185,7 +183,7 @@ public final class ConfigLoader {
 			if(!file.exists() && !file.createNewFile())
 				throw new Exception("An unknown error occurred");
 		} catch(Exception e) {
-			LOGGER.error("Failed to create " + name + " file at " + file, e);
+			RobloxSafechat.LOGGER.error("Failed to create " + name + " file at " + file, e);
 			return;
 		}
 
@@ -195,7 +193,7 @@ public final class ConfigLoader {
 				writer.jsonValue(GSON.toJson(object));
 			}
 		} catch(Exception e) {
-			LOGGER.error("Failed to write " + name + " file at " + file, e);
+			RobloxSafechat.LOGGER.error("Failed to write " + name + " file at " + file, e);
 		}
 	}
 
