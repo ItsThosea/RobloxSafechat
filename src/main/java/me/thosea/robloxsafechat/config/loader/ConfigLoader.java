@@ -1,13 +1,14 @@
-package me.thosea.robloxsafechat.config;
+package me.thosea.robloxsafechat.config.loader;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonWriter;
 import me.thosea.robloxsafechat.RobloxSafechat;
+import me.thosea.robloxsafechat.config.ConfigFiles;
+import me.thosea.robloxsafechat.config.DefaultChats;
+import me.thosea.robloxsafechat.config.loader.updater.ConfigUpdater;
 import me.thosea.robloxsafechat.element.GroupElement;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
@@ -23,8 +24,10 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.OutputStreamWriter;
 import java.nio.file.Path;
-import java.util.function.Consumer;
 
+import static me.thosea.robloxsafechat.RobloxSafechat.LOGGER;
+
+@SuppressWarnings("StringConcatenationArgumentToLogCall") // exceptions won't print stacktrace
 public final class ConfigLoader {
 	private ConfigLoader() {}
 
@@ -32,16 +35,24 @@ public final class ConfigLoader {
 			.setPrettyPrinting()
 			.disableHtmlEscaping()
 			.create();
+	private static final int CONFIG_VERSION = 1;
 
 	private static boolean configError;
 	private static boolean messageError;
 
 	public static void reload() {
 		if(ConfigFiles.CONFIG_FILE.exists()) {
-			loadConfig();
+			try(FileReader reader = new FileReader(ConfigFiles.CONFIG_FILE)) {
+				JsonObject obj = JsonParser.parseReader(reader).getAsJsonObject();
+				loadConfig(obj);
+			} catch(Exception e) {
+				LOGGER.error("[RobloxSafechat] Failed to read config file from " + ConfigFiles.CONFIG_FILE, e);
+				ConfigOption.CONFIG_OPTIONS.values().forEach(ConfigOption::reset);
+				configError = true;
+			}
 		} else {
 			configError = false;
-			setDefaultConfig();
+			ConfigOption.CONFIG_OPTIONS.values().forEach(ConfigOption::reset);
 			writeConfig();
 		}
 
@@ -56,49 +67,42 @@ public final class ConfigLoader {
 		sendErrorMessagesInChat();
 	}
 
-	private static void loadConfig() {
-		try(FileReader reader = new FileReader(ConfigFiles.CONFIG_FILE)) {
-			JsonObject obj = JsonParser.parseReader(reader).getAsJsonObject();
-
-			readObj(obj, "scale", prim -> RobloxSafechat.setScale(prim.getAsFloat()));
-			readObj(obj, "groups_are_also_texts", prim -> {
-				RobloxSafechat.GROUPS_ARE_ALSO_TEXTS = prim.getAsBoolean();
-			});
-			readObj(obj, "show_arrows_next_to_groups", prim -> {
-				RobloxSafechat.SHOW_ARROWS_NEXT_TO_GROUPS = prim.getAsBoolean();
-			});
-			readObj(obj, "instantly_send", prim -> {
-				RobloxSafechat.INSTANTLY_SEND = prim.getAsBoolean();
-			});
-			readObj(obj, "flip_groups", prim -> {
-				RobloxSafechat.FLIP_GROUPS = prim.getAsBoolean();
-			});
-			readObj(obj, "close_after_send", prim -> {
-				RobloxSafechat.CLOSE_AFTER_SEND = prim.getAsBoolean();
-			});
-			readObj(obj, "close_after_send", prim -> {
-				RobloxSafechat.CLOSE_AFTER_SEND = prim.getAsBoolean();
-			});
-			readObj(obj, "min_text_scale_for_scrolling", prim -> {
-				RobloxSafechat.MIN_TEXT_SCALE = prim.getAsFloat();
-			});
-
-			configError = false;
-		} catch(Exception e) {
-			RobloxSafechat.LOGGER.error("Failed to read config file from " + ConfigFiles.CONFIG_FILE, e);
-			configError = true;
-			setDefaultConfig();
+	private static void loadConfig(JsonObject obj) {
+		int configVer;
+		if(obj.has("config_version")) {
+			configVer = obj.get("config_version").getAsInt();
+		} else {
+			configVer = 0;
 		}
-	}
 
-	private static void setDefaultConfig() {
-		RobloxSafechat.setScale(0.8f);
-		RobloxSafechat.GROUPS_ARE_ALSO_TEXTS = false;
-		RobloxSafechat.SHOW_ARROWS_NEXT_TO_GROUPS = true;
-		RobloxSafechat.INSTANTLY_SEND = true;
-		RobloxSafechat.CLOSE_AFTER_SEND = true;
-		RobloxSafechat.FLIP_GROUPS = true;
-		RobloxSafechat.MIN_TEXT_SCALE = 0.7f;
+		if(configVer > CONFIG_VERSION) {
+			LOGGER.warn("[RobloxSafechat] Config version {} is above supported version {}", configVer, CONFIG_VERSION);
+		} else if(configVer < CONFIG_VERSION) {
+			LOGGER.info("[RobloxSafechat] Updating config from version {} to supported version {}", configVer, CONFIG_VERSION);
+			if(configVer < 0) {
+				throw new IllegalStateException("Config has negative config version " + configVer);
+			}
+
+			obj.addProperty("config_version", CONFIG_VERSION);
+			for(int i = configVer; i < CONFIG_VERSION; i++) {
+				LOGGER.info("[RobloxSafechat] Updating from {} to {}", configVer, configVer + 1);
+				ConfigUpdater.UPDATERS[i].transform(obj);
+			}
+
+			writeFile(ConfigFiles.CONFIG_FILE, "config", obj);
+		}
+
+		LOGGER.info("[RobloxSafechat] Loading config with version {}", CONFIG_VERSION);
+
+		ConfigOption.CONFIG_OPTIONS.forEach((name, option) -> {
+			@SuppressWarnings({"UtilityClassWithoutPrivateConstructor", "NonFinalUtilityClass"})
+			class Cast {
+				static <T> T cast(Object obj) {return (T) obj;}
+			}
+			option.set(Cast.cast(option.getType().deserialize(obj.get(name))));
+		});
+
+		configError = false;
 	}
 
 	private static void loadMessages() {
@@ -107,27 +111,10 @@ public final class ConfigLoader {
 			RobloxSafechat.ROOT = GroupElement.deserializeRoot(object);
 			messageError = false;
 		} catch(Exception e) {
-			RobloxSafechat.LOGGER.error("Failed to read messages files from " + ConfigFiles.MESSAGES_FILE);
-			RobloxSafechat.LOGGER.error("Default messages will be used instead.", e);
+			LOGGER.error("[RobloxSafechat] Failed to read messages files from " + ConfigFiles.MESSAGES_FILE);
+			LOGGER.error("[RobloxSafechat] Default messages will be used instead.", e);
 			RobloxSafechat.ROOT = DefaultChats.ROOT;
 			messageError = true;
-		}
-	}
-
-	private static void readObj(JsonObject obj, String name,
-	                            Consumer<JsonPrimitive> handler) {
-		JsonElement element = obj.get(name);
-
-		if(element == null) {
-			throw new IllegalArgumentException("Config option not found: \"" + name + "\"");
-		} else if(!(element instanceof JsonPrimitive primitive)) {
-			throw new IllegalArgumentException("Config option is not a primitive: \"" + name + "\"");
-		} else {
-			try {
-				handler.accept(primitive);
-			} catch(Exception e) {
-				throw new IllegalArgumentException("Config option is invalid: \"" + name + "\"", e);
-			}
 		}
 	}
 
@@ -157,15 +144,12 @@ public final class ConfigLoader {
 	}
 
 	private static JsonObject makeConfigJson() {
-		JsonObject config = new JsonObject();
-		config.addProperty("scale", RobloxSafechat.getScale());
-		config.addProperty("groups_are_also_texts", RobloxSafechat.GROUPS_ARE_ALSO_TEXTS);
-		config.addProperty("show_arrows_next_to_groups", RobloxSafechat.SHOW_ARROWS_NEXT_TO_GROUPS);
-		config.addProperty("instantly_send", RobloxSafechat.INSTANTLY_SEND);
-		config.addProperty("flip_groups", RobloxSafechat.FLIP_GROUPS);
-		config.addProperty("close_after_send", RobloxSafechat.CLOSE_AFTER_SEND);
-		config.addProperty("min_text_scale_for_scrolling", RobloxSafechat.MIN_TEXT_SCALE);
-		return config;
+		JsonObject obj = new JsonObject();
+		obj.addProperty("config_version", CONFIG_VERSION);
+		ConfigOption.CONFIG_OPTIONS.forEach((name, option) -> {
+			obj.add(name, option.getType().serialize(option.getCast()));
+		});
+		return obj;
 	}
 
 	private static void writeFile(File file, String name, JsonObject object) {
@@ -175,7 +159,7 @@ public final class ConfigLoader {
 				throw new Exception("An unknown error occurred");
 			}
 		} catch(Exception e) {
-			RobloxSafechat.LOGGER.error("Failed to make config directory at {}", dir);
+			LOGGER.error("[RobloxSafechat] Failed to make config directory at {}", dir);
 			return;
 		}
 
@@ -183,7 +167,7 @@ public final class ConfigLoader {
 			if(!file.exists() && !file.createNewFile())
 				throw new Exception("An unknown error occurred");
 		} catch(Exception e) {
-			RobloxSafechat.LOGGER.error("Failed to create " + name + " file at " + file, e);
+			LOGGER.error("[RobloxSafechat] Failed to create " + name + " file at " + file, e);
 			return;
 		}
 
@@ -193,7 +177,7 @@ public final class ConfigLoader {
 				writer.jsonValue(GSON.toJson(object));
 			}
 		} catch(Exception e) {
-			RobloxSafechat.LOGGER.error("Failed to write " + name + " file at " + file, e);
+			LOGGER.error("[RobloxSafechat] Failed to write " + name + " file at " + file, e);
 		}
 	}
 
