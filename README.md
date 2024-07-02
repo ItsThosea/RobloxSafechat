@@ -10,7 +10,7 @@ This mod adds every single one of Roblox's old safechat texts into Minecraft, pl
 
 Is it too big or too small? Don't want messages to auto-send? Or want to configure something else?  
 Look no further than the configuration menu!  
-<img src="https://raw.githubusercontent.com/ItsThosea/RobloxSafechat/1.20.2/readme_assets/3.png" width=170>
+<img src="https://github.com/ItsThosea/RobloxSafechat/assets/104597976/97888b93-d70a-4874-b2db-1a5d2913f776" width=170>
 
 Or maybe you want to change the messages you can chat with?! Then you would go to the [messages file!](https://github.com/ItsThosea/RobloxSafechat/wiki/Message-file)<br>
 ### Also check out the [wiki](https://github.com/ItsThosea/RobloxSafechat/wiki)!
